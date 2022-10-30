@@ -16,6 +16,14 @@ public:
     // Copy assignment and move assignment operators
     BigInt& operator=(const BigInt&);
     BigInt& operator=(BigInt&&) noexcept;
+    
+    // Supporting functions for bitwise operations
+    std::vector<bool> to_bin(const BigInt&);
+    BigInt from_bin(std::vector<bool>);
+
+    // Supporting functions for arithmetic operations
+    void abs_add(const BigInt&, const BigInt&, BigInt&);
+    void abs_sub(const BigInt&, const BigInt&, BigInt&);
 
     // Bitwise negation operator
     BigInt operator~() const;
@@ -73,13 +81,4 @@ public:
 private:
     bool unary_minus = false;
     std::string digits;
-    
-    
-    // Supporting functions for bitwise operations
-    std::vector<bool> to_bin(const BigInt&);
-    BigInt from_bin(std::vector<bool>);
-
-    // Supporting functions for arithmetic operations
-    void abs_add(const BigInt&, const BigInt&, BigInt&);
-    void abs_sub(const BigInt&, const BigInt&, BigInt&);
 };
