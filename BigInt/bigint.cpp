@@ -47,11 +47,8 @@ BigInt::BigInt(const BigInt& a) {
 
 // Move constructor
 BigInt::BigInt(BigInt&& a) noexcept {
-    unary_minus = a.unary_minus;
-    digits = a.digits;
-
-    a.unary_minus = false;
-    a.digits = "";
+    unary_minus = std::move(a.unary_minus);
+    digits = std::move(a.digits);
 }
 
 // Copy assignment operator
@@ -63,13 +60,8 @@ BigInt &BigInt::operator=(const BigInt& a) {
 
 // Move assignment operator
 BigInt &BigInt::operator=(BigInt&& a) noexcept {
-    if(this != &a) {
-        unary_minus = a.unary_minus;
-        digits = a.digits;
-
-        a.unary_minus = false;
-        a.digits = "";
-    }
+    unary_minus = std::move(a.unary_minus);
+    digits = std::move(a.digits);
     return *this;
 }
 
