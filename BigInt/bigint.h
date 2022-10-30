@@ -55,14 +55,6 @@ public:
     // Size in bytes
     size_t size() const;
 
-    // Supporting functions for bitwise operations
-    friend std::vector<bool> to_bin(const BigInt&);
-    friend BigInt from_bin(std::vector<bool>);
-
-    // Supporting functions for arithmetic operations
-    friend void abs_add(const BigInt&, const BigInt&, BigInt&);
-    friend void abs_sub(const BigInt&, const BigInt&, BigInt&);
-
     // Arithmetic operators
     friend BigInt operator+(const BigInt&, const BigInt&);
     friend BigInt operator-(const BigInt&, const BigInt&);
@@ -81,4 +73,13 @@ public:
 private:
     bool unary_minus = false;
     std::string digits;
+    
+    
+    // Supporting functions for bitwise operations
+    std::vector<bool> to_bin(const BigInt&);
+    BigInt from_bin(std::vector<bool>);
+
+    // Supporting functions for arithmetic operations
+    void abs_add(const BigInt&, const BigInt&, BigInt&);
+    void abs_sub(const BigInt&, const BigInt&, BigInt&);
 };
