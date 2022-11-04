@@ -18,12 +18,12 @@ public:
     BigInt& operator=(BigInt&&) noexcept;
     
     // Supporting functions for bitwise operations
-    std::vector<bool> to_bin(const BigInt&);
-    BigInt from_bin(std::vector<bool>);
+    friend std::vector<bool> to_bin(const BigInt&);
+    friend BigInt from_bin(std::vector<bool>);
 
     // Supporting functions for arithmetic operations
-    void abs_add(const BigInt&, const BigInt&, BigInt&);
-    void abs_sub(const BigInt&, const BigInt&, BigInt&);
+    friend void abs_add(const BigInt&, const BigInt&, BigInt&);
+    friend void abs_sub(const BigInt&, const BigInt&, BigInt&);
 
     // Bitwise negation operator
     BigInt operator~() const;
