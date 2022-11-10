@@ -1681,7 +1681,6 @@ int main() { // С функции main начинается каждая про�
                 ...
             };
 
-            // Two classes virtually inheriting Animal:
             class Mammal : public virtual Animal { // <--- обратите внимание на ключевое слово virtual
             public:
                 void getHairColor() {...};
