@@ -10,23 +10,28 @@ using namespace std;
 
 class Map {
 public:
-	Texture tBG, tBGS;
-	Sprite BG, BGS;
 	Map() {
-		tBG.loadFromFile("Resources/BG.png"); /// Изменить путь
-		BG.setTexture(tBG);
+		backgroundTexture.loadFromFile("Resources/BG.png"); /// Изменить путь
+		background.setTexture(backgroundTexture);
 
-		BG.setColor(Color(63, 72, 204, 150));
-		BG.setScale(1.5f, 1.5f);
+		background.setColor(Color::Blue);
+		background.setScale(1.5f, 1.5f);
 
-		BG.setPosition(0, 0);
-		BG.setOrigin(0, 1024 / 2);
+		background.setPosition(0, 0);
+		background.setOrigin(0, 1024 / 2.f);
 
-		tBGS.loadFromFile("Resources/SBG.png"); /// Изменить путь
-		BGS.setTexture(tBGS);
-		BGS.setColor(Color(63, 72, 204));
-		BGS.setPosition(0, 0);
+		groundTexture.loadFromFile("Resources/SBG.png"); /// Изменить путь
+		ground.setTexture(groundTexture);
+		ground.setColor(Color::Blue);
+		ground.setPosition(0, 0);
 	}
+
+	Sprite& getBackgroundSprite() { return background; };
+	Sprite& getGroundSprite() { return ground; };
+
+private:
+	Texture backgroundTexture, groundTexture;
+	Sprite background, ground;
 };
 
 class Player {
@@ -35,13 +40,17 @@ public:
 		solid = lvl.GetAllObjects("solid");
 		fatal = lvl.GetAllObjects("fatal");
 
-		x = (startPos = x_pos);
-		y = (ground = (startGround = y_pos)) - 16.f;
+		x = x_pos;
+		y = y_pos - 16.f;
+		ground = startGround;
 		dx = 0.245;
-		dy = 0.f;
-		angle = 0.f;
+		dy = 0;
+		angle = 0;
 		hitbox = 32;
-		isOnGround = true;
+		if (ground == y_pos)
+			isOnGround = true;
+		else
+			isOnGround = false;
 	}
 
 	float getX() { return x; };
@@ -61,22 +70,26 @@ public:
 
 	Sprite getPlayerSprite() { return sprite; };
 
+	virtual void move() = 0;
 	virtual void update(float) = 0;
 
 protected:
-	std::vector<TmxObject> solid;
-	std::vector<TmxObject> fatal;
+	std::vector<TmxObject> solid, fatal;
 
 	float x, y, dx, dy, angle;
-	int hitbox, startGround, ground, startPos;
+	int hitbox, ground, startPos = 128, startGround = 352;
 	bool isOnGround, isDead;
 
 	Image image;
 	Texture texture;
 	Sprite sprite;
 
+	FloatRect GetCubeHitbox() {//ф-ция получения прямоугольника. его коорд,размеры (шир,высот).
+		return FloatRect(x - hitbox / 2.f, y - hitbox / 2.f, hitbox, hitbox);//эта ф-ция нужна для проверки столкновений 
+	}
+
 private:
-	virtual void CheckCollision(float, float) = 0;
+	virtual void CheckCollision() = 0;
 	virtual void Respawn() = 0;
 };
 
@@ -84,19 +97,25 @@ class Cube : public Player {
 public:
 	Cube(TmxLevel& lvl, int x_pos, int y_pos) : Player(lvl, x_pos, y_pos) {
 		image.loadFromFile("Resources/Cube001.png");
-
 		texture.loadFromImage(image);
 
 		sprite.setTexture(texture);
-		sprite.setScale(0.1, 0.1);
+		sprite.setScale(32 / 310.f, 32 / 310.f);
 		sprite.setPosition(x, y);
 		sprite.setOrigin(310 / 2.f, 310 / 2.f);
 		sprite.setColor(Color::Green);
 	}
 
+	void move() override {
+		if (isOnGround == true) {
+			dy = -0.45;
+			isOnGround = false;
+		}
+	}
+
 	void update(float time) override {
 
-		CheckCollision(dx, dy);
+		CheckCollision();
 		x += dx * time;
 
 		if (!isOnGround) {
@@ -109,7 +128,7 @@ public:
 		y += dy * time;
 		if (y > ground - hitbox / 2.f) {
 			y = ground - hitbox / 2.f;
-			dy = 0.f;
+			dy = 0;
 			isOnGround = true;
 		}
 
@@ -120,12 +139,10 @@ public:
 		sprite.setPosition(x, y);
 	}
 
-private:
-	FloatRect GetCubeHitbox() {//ф-ция получения прямоугольника. его коорд,размеры (шир,высот).
-		return FloatRect(x - hitbox / 2.f, y - hitbox / 2.f, hitbox, hitbox);//эта ф-ция нужна для проверки столкновений 
-	}
+	virtual ~Cube() = default;
 
-	void CheckCollision(float dx, float dy) override {
+private:
+	void CheckCollision() override {
 		for (int i = 0; i < solid.size(); i++) { //проходимся по объектам
 			if (GetCubeHitbox().intersects(solid[i].rect)) { //проверяем пересечение игрока с объектом
 				//cout << x + 16 << endl;
@@ -155,9 +172,25 @@ private:
 	void Respawn() override {
 		isDead = true;
 		x = startPos;
-		y = (ground = startGround);
+		y = (ground = startGround) - 16.f;
 		angle = 0;
 	}
+};
+
+class Ship : public Player {
+public:
+	Ship(TmxLevel& lvl, int x_pos, int y_pos) : Player(lvl, x_pos, y_pos) {
+		image.loadFromFile("Resources/Ship01.png");
+		texture.loadFromImage(image);
+
+		sprite.setTexture(texture);
+		sprite.setScale(32 / 288.f, 32 / 288.f);
+		sprite.setPosition(x, y);
+		sprite.setOrigin(382 / 2.f, 288 / 2.f);
+		sprite.setColor(Color::Green);
+	}
+
+	virtual ~Ship() = default;
 };
 
 class Level {
@@ -173,7 +206,7 @@ public:
 
 		TmxObject playerPos = levelMap.GetFirstObject("player");
 
-		Cube cube(levelMap, playerPos.rect.left, playerPos.rect.top);
+		Ship cube(levelMap, playerPos.rect.left, playerPos.rect.top);
 
 		SetMusic();
 
@@ -181,10 +214,10 @@ public:
 		Clock dtClock;
 
 		while (window.isOpen()) {
-			CheckIfCloseWindow(window);
+			CheckIfClosingWindow(window);
 
 			TimeUpdate(time, dtClock);
-			Update(view, &cube, time);
+			Update(window, view, &cube, time);
 
 			Display(view, window, levelMap, &cube);
 		}
@@ -208,7 +241,7 @@ private:
 		dtClock.restart();
 	}
 
-	void CheckIfCloseWindow(RenderWindow& window) {
+	void CheckIfClosingWindow(RenderWindow& window) {
 		Event event;
 		while (window.pollEvent(event)) {
 			if (event.type == Event::Closed || Keyboard::isKeyPressed(Keyboard::Escape)) {
@@ -218,23 +251,22 @@ private:
 		}
 	}
 
-	void Update(View& view, Player* player, float time) {
-		if ((Keyboard::isKeyPressed(Keyboard::Up)) && (player->getIsOnGround() == true)) {
-			player->setDy(-0.45);
-			player->setIsOnGround(false);
-		}
+	void Update(RenderWindow& window, View& view, Player* player, float time) {
+		if ((Keyboard::isKeyPressed(Keyboard::Up)))
+			player->move();
+
 		view.move(player->getDx() * time, 0);
 
 		if (player->getY() < 192 && player->getDy() != 0) {
 			view.move(0, player->getDy() * time);
 		}
-		map.BG.move(player->getDx() * time * 0.9, 0);
+		map.getBackgroundSprite().move(player->getDx() * time * 0.9, 0);
 
 		player->update(time);
 		if (player->getIsDead()) {
 			player->setIsDead(false);
-			view.reset(FloatRect(0, 0, 854, 480));
-			map.BG.setPosition(0, 0);
+			view.reset(FloatRect(0, 0, window.getSize().x, window.getSize().y));
+			map.getBackgroundSprite().setPosition(0, 0);
 			music.setPlayingOffset(music.getPlayingOffset() - music.getPlayingOffset());
 		}
 	}
@@ -242,12 +274,12 @@ private:
 	void Display(View& view, RenderWindow& window, TmxLevel& levelMap, Player* player) {
 		window.setView(view);
 		window.clear(Color::Blue);
-		window.draw(map.BG);
+		window.draw(map.getBackgroundSprite());
 		levelMap.Draw(window);
 
 		for (int i = 0; i < levelLength / 128; i++) {
-			map.BGS.setPosition(i * 128, 352);
-			window.draw(map.BGS);
+			map.getGroundSprite().setPosition(i * 128, window.getSize().y - 128);
+			window.draw(map.getGroundSprite());
 		}
 
 		window.draw(player->getPlayerSprite());
@@ -257,9 +289,11 @@ private:
 
 int main() {
 	View view;
-	RenderWindow window(VideoMode(854, 480), "Geometry Dash");
 
-	view.setSize(854.f, 480.f);
+	int windowWidth = 854, windowHeight = 480;
+	RenderWindow window(VideoMode(windowWidth, windowHeight), "Geometry Dash");
+
+	view.setSize(windowWidth, windowHeight);
 	view.setCenter(window.getSize().x / 2.f, window.getSize().y / 2.f);
 
 	TmxLevel levelMap;
