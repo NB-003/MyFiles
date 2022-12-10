@@ -7,32 +7,6 @@
 using namespace sf;
 using namespace std;
 
-class Map {
-public:
-	Map() {
-		backgroundTexture.loadFromFile("Resources/BG.png"); /// Изменить путь
-		background.setTexture(backgroundTexture);
-
-		background.setColor(Color::Blue);
-		background.setScale(1.5f, 1.5f);
-
-		background.setPosition(0, 0);
-		background.setOrigin(0, 1024 / 2.f);
-
-		groundTexture.loadFromFile("Resources/SBG.png"); /// Изменить путь
-		ground.setTexture(groundTexture);
-		ground.setColor(Color::Blue);
-		ground.setPosition(0, 0);
-	}
-
-	Sprite& getBackgroundSprite() { return background; };
-	Sprite& getGroundSprite() { return ground; };
-
-private:
-	Texture backgroundTexture, groundTexture;
-	Sprite background, ground;
-};
-
 class Player {
 public:
 	Player(TmxLevel& levelMap, int mapHeight, int x_pos, int y_pos) {
@@ -111,13 +85,15 @@ public:
 		sprite.setColor(Color::Green);
 	}
 
+	Cube(TmxLevel& levelMap, int mapHeight) : Cube(levelMap, mapHeight, 192, mapHeight) {}
+
 	void update(float time) override {
 		if (Keyboard::isKeyPressed(Keyboard::Up))
 			Move(time);
 
 		CheckCollision();
 
-		if(isDead)
+		if (isDead)
 			Respawn();
 
 		x += dx * time;
@@ -157,16 +133,16 @@ private:
 			if (GetPlayerHitbox().intersects(solid[i].rect)) { //проверяем пересечение игрока с объектом
 				//cout << x + 16 << endl;
 				if (dy > 0) {
-					ground = solid[i].rect.top; 
-					dy = 0; 
-					isOnGround = true; 
+					ground = solid[i].rect.top;
+					dy = 0;
+					isOnGround = true;
 				}
 			}
 			if (x - hitbox / 2.f > solid[i].rect.left + solid[i].rect.width - 0.3
 				&&
 				x - hitbox / 2.f < solid[i].rect.left + solid[i].rect.width + 0.3) {
 
-				isOnGround = false; 
+				isOnGround = false;
 				ground = startGround;
 
 			}
@@ -207,7 +183,7 @@ public:
 		x += dx * time;
 
 		if (!Keyboard::isKeyPressed(Keyboard::Up)) {
-			if(dy < 0)
+			if (dy < 0)
 				dy += time * gravity;
 
 			if (!isOnGround) {
@@ -274,7 +250,6 @@ private:
 	void CheckCollision() override {
 		for (int i = 0; i < solid.size(); i++) { //проходимся по объектам
 			if (GetPlayerHitbox().intersects(solid[i].rect)) { //проверяем пересечение игрока с объектом
-				//cout << x + 16 << endl;
 				if (dy > 0 && y - hitbox / 2.f <= solid[i].rect.top) {
 					ground = solid[i].rect.top;
 					dy = 0;
@@ -314,64 +289,85 @@ private:
 
 class Level {
 public:
-	Level(TmxLevel levelMap, const char* mapPath, const char* musicPath, int levelLength, int mapHeight) {
-		this->levelMap = levelMap;
+	Level(const char* mapPath, const char* musicPath, int levelLength, int mapHeight) {
+		levelMap.LoadFromFile(mapPath);
 
-		this->musicPath = musicPath;
-		this->mapPath = mapPath;
+		cubePortal = levelMap.GetAllObjects("cubePortal");
+		shipPortal = levelMap.GetAllObjects("shipPortal");
+
 		this->levelLength = levelLength;
 		this->mapHeight = mapHeight;
+
+		SetMusic(musicPath);
+
+		player = new Cube(levelMap, mapHeight);
+		mode = CUBE;
 	}
 
-		void runLevelProcess(View& view, RenderWindow& window) {
-			levelMap.LoadFromFile(mapPath);
+	void runLevelProcess(View& view, RenderWindow& window) {
+		float time;
+		Clock dtClock;
 
-			cubePortal = levelMap.GetAllObjects("cubePortal");
-			shipPortal = levelMap.GetAllObjects("shipPortal");
+		while (window.isOpen()) {
+			CheckWindowCloseRequest(window);
 
-			TmxObject playerPos = levelMap.GetFirstObject("player");
+			TimeUpdate(time, dtClock);
+			CheckModeChangeRequest();
+			Update(window, view, time);
 
-			Player* player = new Cube(levelMap, mapHeight, playerPos.rect.left, playerPos.rect.top);
-			Mode mode = CUBE;
-
-			SetMusic();
-
-			float time;
-			Clock dtClock;
-
-			while (window.isOpen()) {
-				CheckWindowCloseRequest(window);
-
-				TimeUpdate(time, dtClock);
-				player = CheckModeChangeRequest(player, mode);
-				Update(window, view, player, time);
-
-				if (player->getIsDead()) {
-					Respawn(view, player, mode);
-				}
-
-				Display(view, window, levelMap, player);
+			if (player->getIsDead()) {
+				Respawn(view);
 			}
 
-			delete player;
+			Display(view, window);
 		}
+	}
+
+	~Level() {
+		delete player;
+	}
 
 private:
+	class Map {
+	public:
+		Map() {
+			backgroundTexture.loadFromFile("Resources/BG.png"); /// Изменить путь
+			background.setTexture(backgroundTexture);
+
+			background.setColor(Color::Blue);
+			background.setScale(1.5f, 1.5f);
+
+			background.setPosition(0, 0);
+			background.setOrigin(0, 1024 / 2.f);
+
+			groundTexture.loadFromFile("Resources/SBG.png"); /// Изменить путь
+			ground.setTexture(groundTexture);
+			ground.setColor(Color::Blue);
+			ground.setPosition(0, 0);
+		}
+
+		Sprite& getBackgroundSprite() { return background; };
+		Sprite& getGroundSprite() { return ground; };
+
+	private:
+		Texture backgroundTexture, groundTexture;
+		Sprite background, ground;
+	} map;
+
 	TmxLevel levelMap;
 	std::vector<TmxObject> cubePortal, shipPortal;
 
-	const char* mapPath;
-	const char* musicPath;
 	int levelLength, mapHeight;
 	Music music;
-	Map map;
+
+	Player* player;
 
 	enum Mode {
 		CUBE,
 		SHIP
-	};
+	} mode;
 
-	void SetMusic() {
+	void SetMusic(const char* musicPath) {
 		music.openFromFile(musicPath);
 		music.play();
 		music.setVolume(50.f);
@@ -392,7 +388,7 @@ private:
 		}
 	}
 
-	Player* CheckModeChangeRequest(Player* player, Mode& mode) {
+	void CheckModeChangeRequest() {
 		float x = player->getX();
 		float y = player->getY();
 
@@ -400,7 +396,7 @@ private:
 			if (FloatRect(x - 16, y - 16, 32, 32).intersects(cubePortal[i].rect) && mode != CUBE) {
 				delete player;
 				mode = CUBE;
-				return new Cube(levelMap, mapHeight, x, y + 16);
+				player = new Cube(levelMap, mapHeight, x, y + 16);
 			}
 		}
 
@@ -408,35 +404,33 @@ private:
 			if (FloatRect(x - 16, y - 16, 32, 32).intersects(shipPortal[i].rect) && mode != SHIP) {
 				delete player;
 				mode = SHIP;
-				return new Ship(levelMap, mapHeight, x, y + 16);
+				player = new Ship(levelMap, mapHeight, x, y + 16);
 			}
 		}
-
-		return player;
 	}
 
-	void Update(RenderWindow& window, View& view, Player* player, float time) {
+	void Update(RenderWindow& window, View& view, float time) {
 		view.move(player->getDx() * time, 0);
 
 		if (player->getY() < mapHeight - 192 && player->getDy() != 0) {
 			view.move(0, player->getDy() * time * 0.8);
 		}
 		map.getBackgroundSprite().move(player->getDx() * time * 0.9, 0);
-		
+
 		player->update(time);
 	}
 
-	void Respawn(View& view, Player* player, Mode mode) {
+	void Respawn(View& view) {
 		player->setIsDead(false);
 		delete player;
 		mode = CUBE;
-		player = new Cube(levelMap, mapHeight, 192, mapHeight);
+		player = new Cube(levelMap, mapHeight);
 		view.reset(FloatRect(0, mapHeight - 384, 854, 480));
 		map.getBackgroundSprite().setPosition(0, 0);
 		music.setPlayingOffset(music.getPlayingOffset() - music.getPlayingOffset());
 	}
 
-	void Display(View& view, RenderWindow& window, TmxLevel& levelMap, Player* player) {
+	void Display(View& view, RenderWindow& window) {
 		window.setView(view);
 		window.clear(Color::Blue);
 		window.draw(map.getBackgroundSprite());
@@ -463,7 +457,7 @@ int main() {
 
 	TmxLevel levelMap;
 
-	Level StereoMadness(levelMap, "Resources/tiles/map4.tmx", "Resources/StereoMadness.ogg", levelLength, mapHeight);
+	Level StereoMadness("Resources/tiles/map4.tmx", "Resources/StereoMadness.ogg", levelLength, mapHeight);
 	StereoMadness.runLevelProcess(view, window);
 	return 0;
 }
