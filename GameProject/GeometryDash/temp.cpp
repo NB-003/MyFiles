@@ -2,8 +2,7 @@
 #include <SFML/Audio.hpp>
 #include <iostream>
 #include <vector>
-#include <list>
-#include "tmxlevel.h"
+#include "TmxLevel.h"
 
 using namespace sf;
 using namespace std;
@@ -36,14 +35,13 @@ private:
 
 class Player {
 public:
-	Player(TmxLevel& lvl, int mapHeight, int x_pos, int y_pos) {
-		solid = lvl.GetAllObjects("solid");
-		fatal = lvl.GetAllObjects("fatal");
+	Player(TmxLevel& levelMap, int mapHeight, int x_pos, int y_pos) {
+		solid = levelMap.GetAllObjects("solid");
+		fatal = levelMap.GetAllObjects("fatal");
 
 		x = x_pos;
 		y = y_pos - 16.f;
-		startGround = mapHeight;
-		ground = startGround;
+		ground = (startGround = mapHeight);
 		dx = 0.245;
 		dy = 0;
 		angle = 0;
@@ -68,36 +66,41 @@ public:
 	bool getIsDead() { return isDead; };
 	void setIsDead(bool isDead) { this->isDead = isDead; };
 
-	Sprite getPlayerSprite() { return sprite; };
-
-	int getStartGround() { return startGround; };
-
 	virtual void update(float) = 0;
+
+	Sprite getPlayerSprite() {
+		return sprite;
+	}
 
 protected:
 	std::vector<TmxObject> solid, fatal;
-
-	float x, y, dx, dy, angle;
-	int hitbox = 32, startPos = 192, startGround, ground;
-	bool isOnGround, isDead = false;
 
 	Image image;
 	Texture texture;
 	Sprite sprite;
 
+	float x, y, dx, dy, angle;
+	int hitbox = 32, startPos = 192, startGround, ground;
+	bool isOnGround, isDead = false;
+
 	FloatRect GetPlayerHitbox() {//ф-ция получения прямоугольника. его коорд,размеры (шир,высот).
 		return FloatRect(x - hitbox / 2.f, y - hitbox / 2.f, hitbox, hitbox);//эта ф-ция нужна для проверки столкновений 
+	}
+
+	void Respawn() {
+		x = startPos;
+		y = (ground = startGround) - 16.f;
+		angle = 0;
 	}
 
 private:
 	virtual void Move(float) = 0;
 	virtual void CheckCollision() = 0;
-	virtual void Respawn() = 0;
 };
 
 class Cube : public Player {
 public:
-	Cube(TmxLevel& lvl, int mapHeight, int x_pos, int y_pos) : Player(lvl, mapHeight, x_pos, y_pos) {
+	Cube(TmxLevel& levelMap, int mapHeight, int x_pos, int y_pos) : Player(levelMap, mapHeight, x_pos, y_pos) {
 		image.loadFromFile("Resources/Cube001.png");
 		texture.loadFromImage(image);
 
@@ -141,6 +144,7 @@ public:
 	virtual ~Cube() = default;
 
 private:
+
 	void Move(float) override {
 		if (isOnGround == true) {
 			dy = -0.45;
@@ -174,17 +178,11 @@ private:
 				isDead = true;
 		}
 	}
-
-	void Respawn() override {
-		x = startPos;
-		y = (ground = startGround) - 16.f;
-		angle = 0;
-	}
 };
 
 class Ship : public Player {
 public:
-	Ship(TmxLevel& lvl, int mapHeight, int x_pos, int y_pos) : Player(lvl, mapHeight, x_pos, y_pos) {
+	Ship(TmxLevel& levelMap, int mapHeight, int x_pos, int y_pos) : Player(levelMap, mapHeight, x_pos, y_pos) {
 		top = startTop;
 
 		image.loadFromFile("Resources/Ship01.png");
@@ -245,6 +243,7 @@ public:
 	virtual ~Ship() = default;
 
 private:
+
 	float gravity = 0.00025;
 	int startTop = startGround - 288, top;
 	bool isOnTop = false;
@@ -311,51 +310,66 @@ private:
 				isDead = true;
 		}
 	}
-
-	void Respawn() override {
-		x = startPos;
-		y = (ground = startGround) - 16.f;
-		angle = 0;
-	}
 };
 
 class Level {
 public:
-	Level(const char* musicPath, const char* mapPath, int levelLength, int mapHeight) {
+	Level(TmxLevel levelMap, const char* mapPath, const char* musicPath, int levelLength, int mapHeight) {
+		this->levelMap = levelMap;
+
 		this->musicPath = musicPath;
 		this->mapPath = mapPath;
 		this->levelLength = levelLength;
 		this->mapHeight = mapHeight;
 	}
 
-	void LevelProcess(View& view, RenderWindow& window, TmxLevel& levelMap) {
-		levelMap.LoadFromFile(mapPath);
+		void runLevelProcess(View& view, RenderWindow& window) {
+			levelMap.LoadFromFile(mapPath);
 
-		TmxObject playerPos = levelMap.GetFirstObject("player");
+			cubePortal = levelMap.GetAllObjects("cubePortal");
+			shipPortal = levelMap.GetAllObjects("shipPortal");
 
-		Cube cube(levelMap, mapHeight, playerPos.rect.left, playerPos.rect.top);
+			TmxObject playerPos = levelMap.GetFirstObject("player");
 
-		SetMusic();
+			Player* player = new Cube(levelMap, mapHeight, playerPos.rect.left, playerPos.rect.top);
+			Mode mode = CUBE;
 
-		float time;
-		Clock dtClock;
+			SetMusic();
 
-		while (window.isOpen()) {
-			CheckIfClosingWindow(window);
+			float time;
+			Clock dtClock;
 
-			TimeUpdate(time, dtClock);
-			Update(window, view, &cube, time);
+			while (window.isOpen()) {
+				CheckWindowCloseRequest(window);
 
-			Display(view, window, levelMap, &cube);
+				TimeUpdate(time, dtClock);
+				player = CheckModeChangeRequest(player, mode);
+				Update(window, view, player, time);
+
+				if (player->getIsDead()) {
+					Respawn(view, player, mode);
+				}
+
+				Display(view, window, levelMap, player);
+			}
+
+			delete player;
 		}
-	}
 
 private:
-	const char* musicPath;
+	TmxLevel levelMap;
+	std::vector<TmxObject> cubePortal, shipPortal;
+
 	const char* mapPath;
+	const char* musicPath;
 	int levelLength, mapHeight;
 	Music music;
 	Map map;
+
+	enum Mode {
+		CUBE,
+		SHIP
+	};
 
 	void SetMusic() {
 		music.openFromFile(musicPath);
@@ -368,7 +382,7 @@ private:
 		dtClock.restart();
 	}
 
-	void CheckIfClosingWindow(RenderWindow& window) {
+	void CheckWindowCloseRequest(RenderWindow& window) {
 		Event event;
 		while (window.pollEvent(event)) {
 			if (event.type == Event::Closed || Keyboard::isKeyPressed(Keyboard::Escape)) {
@@ -378,22 +392,48 @@ private:
 		}
 	}
 
+	Player* CheckModeChangeRequest(Player* player, Mode& mode) {
+		float x = player->getX();
+		float y = player->getY();
+
+		for (int i = 0; i < cubePortal.size(); i++) {
+			if (FloatRect(x - 16, y - 16, 32, 32).intersects(cubePortal[i].rect) && mode != CUBE) {
+				delete player;
+				mode = CUBE;
+				return new Cube(levelMap, mapHeight, x, y + 16);
+			}
+		}
+
+		for (int i = 0; i < shipPortal.size(); i++) {
+			if (FloatRect(x - 16, y - 16, 32, 32).intersects(shipPortal[i].rect) && mode != SHIP) {
+				delete player;
+				mode = SHIP;
+				return new Ship(levelMap, mapHeight, x, y + 16);
+			}
+		}
+
+		return player;
+	}
+
 	void Update(RenderWindow& window, View& view, Player* player, float time) {
 		view.move(player->getDx() * time, 0);
 
-		if (player->getY() < 192 && player->getDy() != 0) {
-			view.move(0, player->getDy() * time * 0.6);
+		if (player->getY() < mapHeight - 192 && player->getDy() != 0) {
+			view.move(0, player->getDy() * time * 0.8);
 		}
 		map.getBackgroundSprite().move(player->getDx() * time * 0.9, 0);
-
+		
 		player->update(time);
+	}
 
-		if (player->getIsDead()) {
-			player->setIsDead(false);
-			view.reset(FloatRect(0, 0, 854, 480));
-			map.getBackgroundSprite().setPosition(0, 0);
-			music.setPlayingOffset(music.getPlayingOffset() - music.getPlayingOffset());
-		}
+	void Respawn(View& view, Player* player, Mode mode) {
+		player->setIsDead(false);
+		delete player;
+		mode = CUBE;
+		player = new Cube(levelMap, mapHeight, 192, mapHeight);
+		view.reset(FloatRect(0, mapHeight - 384, 854, 480));
+		map.getBackgroundSprite().setPosition(0, 0);
+		music.setPlayingOffset(music.getPlayingOffset() - music.getPlayingOffset());
 	}
 
 	void Display(View& view, RenderWindow& window, TmxLevel& levelMap, Player* player) {
@@ -403,7 +443,7 @@ private:
 		levelMap.Draw(window);
 
 		for (int i = 0; i < levelLength / 128; i++) {
-			map.getGroundSprite().setPosition(i * 128, player->getStartGround());
+			map.getGroundSprite().setPosition(i * 128, mapHeight);
 			window.draw(map.getGroundSprite());
 		}
 
@@ -415,15 +455,15 @@ private:
 int main() {
 	View view;
 
-	int windowWidth = 854, windowHeight = 480;
+	int windowWidth = 854, windowHeight = 480, mapHeight = 18 * 32, levelLength = 852 * 32;
 	RenderWindow window(VideoMode(windowWidth, windowHeight), "Geometry Dash");
 
 	view.setSize(windowWidth, windowHeight);
-	view.setCenter(windowWidth / 2, windowHeight / 2);
+	view.setCenter(windowWidth / 2.f, (2 * mapHeight - 288) / 2.f);
 
 	TmxLevel levelMap;
 
-	Level StereoMadness("Resources/StereoMadness.ogg" ,"Resources/tiles/map2.tmx", 27264, 13 * 32);
-	StereoMadness.LevelProcess(view, window, levelMap);
+	Level StereoMadness(levelMap, "Resources/tiles/map4.tmx", "Resources/StereoMadness.ogg", levelLength, mapHeight);
+	StereoMadness.runLevelProcess(view, window);
 	return 0;
 }
