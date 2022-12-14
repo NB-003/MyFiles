@@ -1,7 +1,7 @@
 #include "Ship.h"
 
 Ship::Ship(TmxLevel& levelMap, int mapHeight, int x_pos, int y_pos) : Player(levelMap, mapHeight, x_pos, y_pos) {
-	top = (startTop = startGround - 288);
+	top = (startTop = startGround - 384); // Upper limit
 
 	playerTexture.loadFromFile("Resources/Ship01.png");
 
@@ -25,7 +25,7 @@ void Ship::update(float time) {
 
 	if (!CheckMoveRequest()) {
 		if (dy < 0)
-			dy += time * gravity;
+			dy += time * gravity; // Setting up movement for ship if button isn't pressed
 
 		if (!isOnGround) {
 			dy += time * gravity;
@@ -39,18 +39,18 @@ void Ship::update(float time) {
 
 	y += dy * time;
 
-	while (y > ground - hitbox / 2.f) {
+	while (y > ground - hitbox / 2.f) { // It's here to not fly below ground
 		y -= time * gravity;
 	}
-	if (y == ground - hitbox / 2.f) {
+	if (y == ground - hitbox / 2.f) { // Setting up ground
 		isOnGround = true;
 		dy = 0;
 	}
 
-	if (isOnGround && angle > 0)
+	if (isOnGround && angle > 0) // It's here to smoothly align the angle of ship
 		angle -= time * 0.2;
 
-	if (isOnTop && angle < 0)
+	if (isOnTop && angle < 0) // And this too
 		angle += time * 0.22;
 
 	playerSprite.setRotation(angle);
@@ -66,14 +66,14 @@ void Ship::Move(float time) {
 	}
 
 	if (dy > 0)
-		dy -= time * gravity;
+		dy -= time * gravity; // Setting up movement for ship if button is pressed
 
 	while (y < top + hitbox / 2.f) {
-		y += time * gravity;
+		y += time * gravity; // It's here to not fly above upper limit
 	}
 
-	if (y == top + hitbox / 2.f) {
-		isOnTop = true;
+	if (y == top + hitbox / 2.f) { // Setting up upper limit
+		isOnTop = true; 
 		dy = 0;
 	}
 
@@ -81,16 +81,16 @@ void Ship::Move(float time) {
 }
 
 void Ship::CheckCollision() {
-	for (int i = 0; i < solid.size(); i++) { //проходимся по объектам
-		if (GetPlayerHitbox().intersects(solid[i].rect)) { //проверяем пересечение игрока с объектом
+	for (int i = 0; i < solid.size(); i++) { 
+		if (GetPlayerHitbox().intersects(solid[i].rect)) { 
 			if (dy > 0 && y - hitbox / 2.f <= solid[i].rect.top) {
-				ground = solid[i].rect.top;
+				ground = solid[i].rect.top; // Ship lies on this object if ship was higher
 				dy = 0;
 				isOnGround = true;
 			}
 
 			if (dy < 0 && y + hitbox / 2.f >= solid[i].rect.top + solid[i].rect.height) {
-				top = solid[i].rect.top + solid[i].rect.height;
+				top = solid[i].rect.top + solid[i].rect.height; // or leans on it if ship was lower
 				dy = 0;
 				isOnTop = true;
 			}
@@ -101,11 +101,11 @@ void Ship::CheckCollision() {
 			x - hitbox / 2.f < solid[i].rect.left + solid[i].rect.width + 0.3) {
 
 			if (isOnGround) {
-				isOnGround = false;
+				isOnGround = false; // Ship falls if it lies and is on edge of the object
 				ground = startGround;
 			}
 			if (isOnTop) {
-				isOnTop = false;
+				isOnTop = false; // or gets up if it leans 
 				top = startTop;
 			}
 
@@ -113,7 +113,7 @@ void Ship::CheckCollision() {
 
 	}
 
-	for (int i = 0; i < fatal.size(); i++) {
+	for (int i = 0; i < fatal.size(); i++) { // Same as for cube
 		if (GetPlayerHitbox().intersects(fatal[i].rect))
 			isDead = true;
 	}

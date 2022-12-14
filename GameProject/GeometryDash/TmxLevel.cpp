@@ -118,10 +118,10 @@ bool TmxLevel::LoadFromFile(const std::string& filepath)
     // Map element example:
     //   <map version="1.0" orientation="orthogonal"
     //    width="10" height="10" tilewidth="34" tileheight="34">
-    m_width = std::stoi(map->Attribute("width"));
-    m_height = std::stoi(map->Attribute("height"));
-    m_tileWidth = std::stoi(map->Attribute("tilewidth"));
-    m_tileHeight = std::stoi(map->Attribute("tileheight"));
+    m_width = std::stoll(map->Attribute("width"));
+    m_height = std::stoll(map->Attribute("height"));
+    m_tileWidth = std::stoll(map->Attribute("tilewidth"));
+    m_tileHeight = std::stoll(map->Attribute("tileheight"));
 
     // Retrieve tileset description and the first tile GID (Group Identifier).
     XMLElement* tilesetElement = map->FirstChildElement("tileset");
@@ -212,8 +212,8 @@ bool TmxLevel::LoadFromFile(const std::string& filepath)
         int y = 0;
         while (tileElement)
         {
-            const int tileGID = std::stoi(tileElement->Attribute("gid"));
-            const int subRectToUse = tileGID - m_firstTileID;
+            const long long tileGID = std::stoll(tileElement->Attribute("gid"));
+            const long long subRectToUse = tileGID - m_firstTileID;
 
             // Figure out texture rect for each tile.
             if (subRectToUse >= 0)
@@ -290,7 +290,7 @@ bool TmxLevel::LoadFromFile(const std::string& filepath)
                 }
                 else
                 {
-                    const size_t index = std::stoi(objectElement->Attribute("gid")) - m_firstTileID;
+                    const size_t index = std::stoll(objectElement->Attribute("gid")) - m_firstTileID;
                     width = static_cast<float>(subRects[index].width);
                     height = static_cast<float>(subRects[index].height);
                     sprite.setTextureRect(subRects[index]);

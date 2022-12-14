@@ -7,7 +7,7 @@ Player::Player(TmxLevel& levelMap, int mapHeight, int x_pos, int y_pos) {
 	x = x_pos;
 	y = y_pos - 16.f;
 	ground = (startGround = mapHeight);
-	dx = 0.245;
+	dx = 0.26;
 	dy = 0;
 	angle = 0;
 	if (ground == y_pos)
@@ -38,9 +38,7 @@ sf::FloatRect Player::GetPlayerHitbox() {//ф-ция получения прямоугольника. его к
 }
 
 bool Player::CheckMoveRequest() {
-	return sf::Keyboard::isKeyPressed(sf::Keyboard::Space)
-		   ||
-		   sf::Keyboard::isKeyPressed(sf::Keyboard::Up)
+	return sf::Keyboard::isKeyPressed(sf::Keyboard::Up)
 		   ||
 		   sf::Mouse::isButtonPressed(sf::Mouse::Left);
 }

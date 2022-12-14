@@ -10,7 +10,7 @@ Cube::Cube(TmxLevel& levelMap, int mapHeight, int x_pos, int y_pos) : Player(lev
 	playerSprite.setColor(sf::Color::Green);
 }
 
-Cube::Cube(TmxLevel& levelMap, int mapHeight) : Cube(levelMap, mapHeight, 192, mapHeight) {}
+Cube::Cube(TmxLevel& levelMap, int mapHeight) : Cube(levelMap, mapHeight, 288, mapHeight) {}
 
 void Cube::update(float time) {
 	if (CheckMoveRequest())
@@ -50,28 +50,27 @@ void Cube::Move(float) {
 }
 
 void Cube::CheckCollision() {
-	for (int i = 0; i < solid.size(); i++) { //проходимся по объектам
-		if (GetPlayerHitbox().intersects(solid[i].rect)) { //проверяем пересечение игрока с объектом
-			//cout << x + 16 << endl;
+	for (int i = 0; i < solid.size(); i++) { // Going through all objects with type of "solid"
+		if (GetPlayerHitbox().intersects(solid[i].rect)) { // Checking collision with this type of object
 			if (dy > 0) {
-				ground = solid[i].rect.top;
+				ground = solid[i].rect.top; // Cube stands on this object if cube was higher
 				dy = 0;
 				isOnGround = true;
 			}
 		}
-		if (x - hitbox / 2.f > solid[i].rect.left + solid[i].rect.width - 0.3
+		if (x - hitbox / 2.f > solid[i].rect.left + solid[i].rect.width - 0.6
 			&&
-			x - hitbox / 2.f < solid[i].rect.left + solid[i].rect.width + 0.3) {
+			x - hitbox / 2.f < solid[i].rect.left + solid[i].rect.width + 0.6) {
 
-			isOnGround = false;
+			isOnGround = false; // Cube falls if it is on edge of the object
 			ground = startGround;
 
 		}
 
 	}
 
-	for (int i = 0; i < fatal.size(); i++) {
+	for (int i = 0; i < fatal.size(); i++) { // Going through all objects with type of "fatal"
 		if (GetPlayerHitbox().intersects(fatal[i].rect))
-			isDead = true;
+			isDead = true; // If cube hits this object, he dies and respawns at the start
 	}
 }

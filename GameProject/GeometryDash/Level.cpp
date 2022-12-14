@@ -8,23 +8,31 @@ Level::Level(const char* mapPath, const char* musicPath, int levelLength, int ma
 	this->mapHeight = mapHeight;
 }
 
-void Level::runLevelProcess(sf::View& view, sf::RenderWindow& window) {
-	levelMap.LoadFromFile(mapPath);
+void Level::runLevelProcess(sf::View& view, sf::RenderWindow& window, sf::Color backgroundColor, sf::Color groundColor) {
+	isLevel = true;
+
+	map.getBackgroundSprite().setPosition(0, mapHeight - 384);
+	map.getBackgroundSprite().setColor(backgroundColor);
+	map.getGroundSprite().setColor(groundColor);
+
+	levelMap.LoadFromFile(mapPath); // Loading level structure from .tmx file (our map)
 
 	cubePortal = levelMap.GetAllObjects("cubePortal");
 	shipPortal = levelMap.GetAllObjects("shipPortal");
 
 	SetMusic();
 
-	player = new Cube(levelMap, mapHeight);
+	player = new Cube(levelMap, mapHeight); // Starting always as cube
 	mode = CUBE;
 
 	sf::Clock dtClock;
 
 	while (window.isOpen()) {
-		CheckWindowCloseRequest(window);
+		if (!isLevel)
+			break;
 
-		CheckPauseRequest();
+		CheckLevelStopRequest(window);
+
 		TimeUpdate(dtClock);
 
 		CheckModeChangeRequest();
@@ -34,42 +42,16 @@ void Level::runLevelProcess(sf::View& view, sf::RenderWindow& window) {
 			Respawn(view);
 		}
 
-		Display(view, window);
+		Display(view, window, backgroundColor);
 	}
 
 	delete player;
 }
 
-Level::Map::Map() {
-	backgroundTexture.loadFromFile("Resources/BG.png"); /// Изменить путь
-	background.setTexture(backgroundTexture);
-
-	background.setColor(sf::Color::Blue);
-	background.setScale(1.5f, 1.5f);
-
-	background.setPosition(0, 0);
-	background.setOrigin(0, 1024 / 2.f);
-
-	groundTexture.loadFromFile("Resources/SBG.png"); /// Изменить путь
-	ground.setTexture(groundTexture);
-	ground.setColor(sf::Color::Blue);
-	ground.setPosition(0, 0);
-}
-
-sf::Sprite& Level::Map::getBackgroundSprite() { return background; };
-sf::Sprite& Level::Map::getGroundSprite() { return ground; };
-
 void Level::SetMusic() {
 	music.openFromFile(musicPath);
 	music.play();
 	music.setVolume(50.f);
-}
-
-void Level::CheckPauseRequest() {
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
-		isPaused = true;
-	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
-		isPaused = false;
 }
 
 void Level::TimeUpdate(sf::Clock& dtClock) {
@@ -88,12 +70,28 @@ void Level::TimeUpdate(sf::Clock& dtClock) {
 	dtClock.restart();
 }
 
-void Level::CheckWindowCloseRequest(sf::RenderWindow& window) {
+void Level::CheckLevelStopRequest(sf::RenderWindow& window) {
 	sf::Event event;
 	while (window.pollEvent(event)) {
 		if (event.type == sf::Event::Closed) {
 			music.stop();
 			window.close();
+		}
+		if (!isPaused && event.type == sf::Event::KeyReleased
+			&&
+			event.key.code == sf::Keyboard::Escape)
+			isPaused = true;
+
+		else if (isPaused && event.type == sf::Event::KeyReleased
+			&&
+			event.key.code == sf::Keyboard::Space)
+			isPaused = false;
+
+		else if ((isPaused && event.type == sf::Event::KeyReleased
+			&&
+			event.key.code == sf::Keyboard::Escape) || player->getX() >= levelLength) {
+			music.stop();
+			isLevel = false;
 		}
 	}
 }
@@ -125,7 +123,7 @@ void Level::Update(sf::View& view, sf::RenderWindow& window) {
 	if (player->getY() < mapHeight - 192 && player->getDy() != 0) {
 		view.move(0, player->getDy() * time * 0.8);
 	}
-	map.getBackgroundSprite().move(player->getDx() * time * 0.9, 0);
+	map.getBackgroundSprite().move(player->getDx() * time * 0.95, 0);
 
 	player->update(time);
 }
@@ -136,13 +134,14 @@ void Level::Respawn(sf::View& view) {
 	mode = CUBE;
 	player = new Cube(levelMap, mapHeight);
 	view.reset(sf::FloatRect(0, mapHeight - 384, 854, 480));
-	map.getBackgroundSprite().setPosition(0, 0);
+	map.getBackgroundSprite().setPosition(0, mapHeight - 384);
 	music.setPlayingOffset(music.getPlayingOffset() - music.getPlayingOffset());
 }
 
-void Level::Display(sf::View& view, sf::RenderWindow& window) {
+void Level::Display(sf::View& view, sf::RenderWindow& window, sf::Color color) {
 	window.setView(view);
-	window.clear(sf::Color::Blue);
+	window.clear(color);
+
 	window.draw(map.getBackgroundSprite());
 	levelMap.Draw(window);
 

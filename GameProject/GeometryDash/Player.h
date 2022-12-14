@@ -1,4 +1,5 @@
 #pragma once
+
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 #include <SFML/Window.hpp>
@@ -38,7 +39,7 @@ protected:
 	sf::Sprite playerSprite;
 
 	float x, y, dx, dy, angle;
-	const int hitbox = 32, startPos = 192;
+	const int hitbox = 32, startPos = 288;
 	int startGround, ground;
 	bool isOnGround, isDead = false;
 
