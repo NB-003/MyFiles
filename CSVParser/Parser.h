@@ -33,7 +33,18 @@ public:
 private:
     std::ifstream fin;
     size_t offset;
+
+    void Reset();
 };
+
+template<typename... Args>
+void Parser<Args...>::Reset() {
+    std::string str;
+    fin.clear();
+    fin.seekg(0, std::ifstream::beg);
+    for(int i = 0; i < offset; i++)
+        getline(fin, str);
+}
 
 template<typename... Args>
 Parser<Args...>::Parser(const char* path, size_t offset): fin(path) {
@@ -49,10 +60,7 @@ Parser<Args...>::Parser(const char* path, size_t offset): fin(path) {
 
     this->offset = offset;
 
-    fin.clear();
-    fin.seekg(0, std::ifstream::beg);
-    for(int i = 0; i < offset; i++)
-        getline(fin, str);
+    Reset();
 }
 
 template<typename... Args>
@@ -113,10 +121,6 @@ std::tuple<Args...> Parser<Args...>::operator[](size_t i) {
 
     for(size_t j = 0; j < i; ++j, ++it);
 
-    std::string str;
-    fin.seekg(0, std::ifstream::beg);
-    for(int j = 0; j < offset; j++)
-        getline(fin, str);
-
+    Reset();
     return *it;
 }
