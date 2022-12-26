@@ -3,41 +3,120 @@
 #include <fstream>
 #include <sstream>
 #include <tuple>
-#include <functional>
+#include "ReadTuple.h"
 
-template<size_t index, typename... Args>
-class PrintTuple {
-public:
-    static void print(std::tuple<Args...> const& t, std::ostream& os) {
-        PrintTuple<index - 1, Args...>::print(t, os);
-        PrintTupleElement(std::get<index>(t), os);
-    }
+template<typename... Args>
+class Parser {
 private:
-    template<typename T>
-    static void PrintTupleElement(T&& t, std::ostream& os) {
-        os << t;
-        if(index != sizeof...(Args) - 1)
-            os << ", ";
-        else
-            os << std::endl;
-    }
+    class Iterator {
+    public:
+        Iterator(std::ifstream*);
+
+        // All operators for tuple run implementation
+        Iterator& operator++();
+        std::tuple<Args...>& operator*();
+        bool operator==(const Iterator&) const;
+        bool operator!=(const Iterator&) const;
+    private:
+        std::ifstream* fin_ptr;
+        std::tuple<Args...> curLine;
+        size_t index;
+    };
+public:
+    explicit Parser(const char*, size_t);
+    explicit Parser(std::string&, size_t);
+
+    Iterator begin();
+    Iterator end();
+
+    std::tuple<Args...> operator[](size_t);
+private:
+    std::ifstream fin;
+    size_t offset;
 };
 
 template<typename... Args>
-class PrintTuple<0, Args...> {
-public:
-    static void print(std::tuple<Args...> const& t, std::ostream& os) {
-        PrintTupleElement(std::get<0>(t), os);
-    }
-private:
-    template<typename T>
-    static void PrintTupleElement(T&& t, std::ostream& os) {
-        os << t << ", ";
-    }
-};
+Parser<Args...>::Parser(const char* path, size_t offset): fin(path) {
+    if(!fin.is_open())
+        throw std::invalid_argument("Can't open file");
+
+    std::string str;
+    int linesNumber;
+    for(linesNumber = 0; getline(fin, str); linesNumber++);
+
+    if(offset >= linesNumber)
+        throw std::invalid_argument("Offset is too big");
+
+    this->offset = offset;
+
+    fin.clear();
+    fin.seekg(0, std::ifstream::beg);
+    for(int i = 0; i < offset; i++)
+        getline(fin, str);
+}
 
 template<typename... Args>
-std::ostream& operator<<(std::ostream& os, std::tuple<Args...> const& tuple) {
-    PrintTuple<sizeof...(Args) - 1, Args...>::print(tuple, os);
-    return os;
+Parser<Args...>::Parser(std::string& path, size_t offset): Parser(path.c_str(), offset) {}
+
+template<typename... Args>
+Parser<Args...>::Iterator::Iterator(std::ifstream* fin): fin_ptr(fin) {
+    if(fin_ptr != nullptr) {
+        index = 0;
+        (*fin_ptr) >> curLine;
+    }
+    else index = -1;
+}
+
+template<typename... Args>
+class Parser<Args...>::Iterator& Parser<Args...>::Iterator::operator++() {
+    if(fin_ptr == nullptr) return *this;
+
+    index++;
+    (*fin_ptr) >> curLine;
+
+    if(fin_ptr->eof()) {
+        fin_ptr = nullptr;
+        index = -1;
+    }
+
+    return *this;
+}
+
+template<typename... Args>
+std::tuple<Args...>& Parser<Args...>::Iterator::operator*() {
+    return curLine;
+}
+
+template<typename... Args>
+bool Parser<Args...>::Iterator::operator==(const class Parser<Args...>::Iterator& it) const {
+    return fin_ptr == it.fin_ptr && index == it.index;
+}
+
+template<typename... Args>
+bool Parser<Args...>::Iterator::operator!=(const class Parser<Args...>::Iterator& it) const {
+    return !(*this == it);
+}
+
+template<typename... Args>
+class Parser<Args...>::Iterator Parser<Args...>::begin() {
+    return Iterator(&fin);
+}
+
+template<typename... Args>
+class Parser<Args...>::Iterator Parser<Args...>::end() {
+    return Iterator(nullptr);
+}
+
+template<typename... Args>
+std::tuple<Args...> Parser<Args...>::operator[](size_t i) {
+    Iterator it = begin();
+
+    for(size_t j = 0; j < i; ++j, ++it);
+
+    std::string str;
+    fin.seekg(0, std::ifstream::beg);
+    for(int j = 0; j < offset; j++)
+        getline(fin, str);
+
+    return *it;
 }
