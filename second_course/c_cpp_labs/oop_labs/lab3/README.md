@@ -3,9 +3,7 @@
 ## Subtask #1 - print tuple:
 Используя рекурсивные шаблоны реализовать оператор для печати std:tuple:
 
-.....
-auto operator<<(std::basic_ostream<Ch, Tr>& os, std::tuple<Args...> const& t)
-.....
+auto operator<<(std::basic_ostream<Ch, Tr>& os, std::tuple<Args...> const& t);
 
 
 ## Subtask #2 - simple CSV parser:
