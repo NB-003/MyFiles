@@ -18,9 +18,7 @@
 * int main() {
 *    ifstream file("test.csv");
 *    CSVParser<int, string> parser(file, 0 /*skip first lines count*/);
-*    for (tuple<int, string> rs : parser) {
-*        cout<<rs<<endl;
-*    }
+*    for (tuple<int, string> rs : parser) { cout << rs << endl; }
 * }
 
 Потоковая обработка подразумевает lazy (ленивое) чтение строк.
