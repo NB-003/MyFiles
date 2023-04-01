@@ -14,6 +14,7 @@ auto operator<<(std::basic_ostream<Ch, Tr>& os, std::tuple<Args...> const& t);
 
 ### CSVParser:
 Написать класс делающий возможным следующую потоковую работу с CSV:
+
 int main() {
    ifstream file("test.csv");
    CSVParser<int, string> parser(file, 0 /*skip first lines count*/);
