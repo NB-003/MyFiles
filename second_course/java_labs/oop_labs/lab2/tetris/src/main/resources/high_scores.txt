@@ -1,0 +1,4 @@
+Player: 700
+aaa: 200
+hello: 100
+Bulat: 100
