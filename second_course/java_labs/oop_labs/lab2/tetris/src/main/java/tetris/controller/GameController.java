@@ -43,7 +43,7 @@ public class GameController {
         dialog.setHeaderText("Please enter your name:");
         dialog.setContentText("Name:");
 
-        // Изменение типов кнопок
+        // Change type of buttons
         dialog.getDialogPane().getButtonTypes().setAll(ButtonType.OK);
 
         Optional<String> playerNameResult = dialog.showAndWait();
