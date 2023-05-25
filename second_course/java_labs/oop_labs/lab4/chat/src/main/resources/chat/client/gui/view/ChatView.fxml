@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<HBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" style="-fx-background-color: #336699;" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1">
+    <VBox alignment="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="491.0" prefWidth="687.0" spacing="20.0" style="-fx-background-color: #336699;" HBox.hgrow="ALWAYS">
+        <padding>
+            <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+        </padding>
+        <ListView fx:id="chatListView" prefHeight="485.0" prefWidth="544.0" VBox.vgrow="ALWAYS" style="-fx-control-inner-background: #556677; -fx-control-inner-background-alt: #446688; -fx-background-color: #556677;" />
+        <TextArea fx:id="messageTextArea" prefHeight="105.0" prefWidth="510.0" promptText="Сообщение" VBox.vgrow="ALWAYS" style="-fx-control-inner-background: #556677; -fx-background-color: #556677;" />
+    </VBox>
+    <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="600.0" prefWidth="334.0" spacing="20.0" style="-fx-background-color: #336699;" HBox.hgrow="ALWAYS">
+        <padding>
+            <Insets bottom="20.0" right="10.0" top="20.0" />
+        </padding>
+        <opaqueInsets>
+            <Insets right="5.0" />
+        </opaqueInsets>
+        <TitledPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="645.0" prefWidth="324.0" text="Участники чата" VBox.vgrow="ALWAYS" style="-fx-background-color: #336699;">
+            <VBox prefHeight="570.0" prefWidth="322.0">
+                <ListView fx:id="participantListView" prefHeight="537.0" prefWidth="302.0" VBox.vgrow="ALWAYS" style="-fx-control-inner-background: #556677; -fx-control-inner-background-alt: #446688; -fx-background-color: #556677;" />
+            </VBox>
+        </TitledPane>
+    </VBox>
+</HBox>
